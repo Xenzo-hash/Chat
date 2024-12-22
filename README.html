@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(to bottom, #0a0a0a, #1a1a1a);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: none;
+            font-size: 1rem;
+        }
+
+        input {
+            background: #1a1a1a;
+            color: white;
+        }
+
+        button {
+            background: linear-gradient(to right, #ff0000, #8b0000);
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: linear-gradient(to right, #8b0000, #ff0000);
+        }
+
+        #chat {
+            display: none;
+        }
+
+        #messages {
+            height: 200px;
+            overflow-y: scroll;
+            border: 1px solid #444;
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #222;
+        }
+
+        .password-strength {
+            height: 5px;
+            background: #333;
+            margin-top: 5px;
+            border-radius: 3px;
+        }
+
+        .password-strength-bar {
+            height: 5px;
+            width: 0;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="register">
+        <h1>Register</h1>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <div class="password-strength">
+            <div class="password-strength-bar" id="strengthBar"></div>
+        </div>
+        <button onclick="register()">Register</button>
+        <p id="error" style="color: red;"></p>
+    </div>
+
+    <div class="container" id="chat">
+        <h1>Chat</h1>
+        <div id="messages"></div>
+        <input type="text" id="message" placeholder="Type a message...">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+
+    <script>
+        const strengthBar = document.getElementById('strengthBar');
+        const errorElement = document.getElementById('error');
+        const chatContainer = document.getElementById('chat');
+        const registerContainer = document.getElementById('register');
+        const messagesElement = document.getElementById('messages');
+        const users = {}; // In-memory user storage (just for demo purposes)
+
+        let currentUser = null;
+        let socket = null;
+
+        document.getElementById('password').addEventListener('input', function () {
+            const password = this.value;
+            let strength = 0;
+
+            if (password.length >= 6) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[@$!%*?&#]/.test(password)) strength++;
+
+            const strengthColors = ['red', 'orange', 'yellow', 'green'];
+            strengthBar.style.width = `${strength * 25}%`;
+            strengthBar.style.backgroundColor = strengthColors[strength - 1] || '#333';
+        });
+
+        function register() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            if (!username || !password) {
+                errorElement.textContent = 'Username and password are required!';
+                return;
+            }
+
+            if (users[username]) {
+                errorElement.textContent = 'Username is already taken!';
+                return;
+            }
+
+            users[username] = password;
+            currentUser = username;
+            initializeChat();
+        }
+
+        function initializeChat() {
+            registerContainer.style.display = 'none';
+            chatContainer.style.display = 'block';
+
+            // Simulated WebSocket connection
+            socket = {
+                messages: [],
+                send: function (message) {
+                    this.messages.push(message);
+                    displayMessage(message);
+                },
+                receive: function () {
+                    return this.messages;
+                }
+            };
+        }
+
+        function sendMessage() {
+            const message = document.getElementById('message').value;
+
+            if (!message) return;
+
+            const formattedMessage = `${currentUser}: ${message}`;
+            socket.send(formattedMessage);
+            document.getElementById('message').value = '';
+        }
+
+        function displayMessage(message) {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            messagesElement.appendChild(messageElement);
+            messagesElement.scrollTop = messagesElement.scrollHeight;
+        }
+    </script>
+</body>
+</html>
